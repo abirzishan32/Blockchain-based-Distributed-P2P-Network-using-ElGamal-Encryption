@@ -171,33 +171,8 @@ This simulation framework is ideal for:
 - **Cryptographic Protocol Evaluation**: Comparing ElGamal vs traditional methods
 - **Consensus Algorithm Development**: Prototyping new BFT mechanisms
 
-## Performance Metrics
 
-The simulation tracks:
-- **Block Generation Rate**: Mining frequency across nodes
-- **Consensus Time**: Time to achieve network agreement
-- **Byzantine Tolerance**: Network resilience to malicious nodes
-- **Encryption Overhead**: ElGamal vs SHA256 performance
-- **Network Throughput**: Message propagation efficiency
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the GNU Lesser General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- **OMNeT++** simulation framework
-- **ElGamal Cryptographic System** research
-- **Fuzzy Logic Control Systems** methodology
-- **Byzantine Fault Tolerance** algorithms
 
 ## Contact
 
