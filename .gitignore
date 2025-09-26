@@ -1,0 +1,48 @@
+# Build outputs
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+*.obj
+
+# OMNeT++ generated files
+*.vec
+*.sca
+*.vci
+*.pyc
+
+# Results and logs
+results/
+*.log
+
+# IDE files
+.settings/
+.cproject
+.project
+.oppbuildspec
+.nedexclusions
+.nedfolders
+
+# Qt environment files
+.qtenvrc
+
+# Temporary files
+*~
+.DS_Store
+Thumbs.db
+
+# Keep only these essential folders and files
+!src/
+!simulations/
+!Makefile
+
+# But exclude certain files even in kept directories
+src/Makefile
+src/*.exe
+src/*.dll
+src/*.so
+src/*.dylib
+src/*.a
