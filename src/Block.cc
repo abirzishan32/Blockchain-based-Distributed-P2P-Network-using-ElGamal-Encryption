@@ -1,5 +1,5 @@
 #include "Block.h"
-#include <functional>
+#include "SHA256.h"
 #include <sstream>
 
 Block::Block(int blockNum, const std::string& blockData, const std::string& prevHash)
@@ -11,13 +11,8 @@ std::string Block::calculateHash() const {
     std::stringstream ss;
     ss << blockNumber << nonce << data << previousHash;
 
-    // Simple hash function (in real blockchain, use SHA256)
-    std::hash<std::string> hasher;
-    size_t hashValue = hasher(ss.str());
-
-    std::stringstream hashStream;
-    hashStream << std::hex << hashValue;
-    return hashStream.str();
+    // Use proper SHA256 hash function
+    return SHA256::hash(ss.str());
 }
 
 bool Block::isValidBlock() const {

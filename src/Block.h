@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include "SHA256.h"  // Add this include
 
 class Block {
 private:
