@@ -2,16 +2,18 @@
 #include <chrono>
 #include <sstream>
 
-std::mt19937 ByzantineNode::rng(std::chrono::steady_clock::now().time_since_epoch().count());
+using namespace std;
+
+mt19937 ByzantineNode::rng(chrono::steady_clock::now().time_since_epoch().count());
 
 void ByzantineNode::initializeRandom() {
-    rng.seed(std::chrono::steady_clock::now().time_since_epoch().count());
+    rng.seed(chrono::steady_clock::now().time_since_epoch().count());
 }
 
-std::string ByzantineNode::corruptBlockData(const std::string& originalData, int nodeId) {
-    std::stringstream ss;
+string ByzantineNode::corruptBlockData(const string& originalData, int nodeId) {
+    stringstream ss;
 
-    std::uniform_int_distribution<int> corruptionType(1, 4);
+    uniform_int_distribution<int> corruptionType(1, 4);
 
     switch(corruptionType(rng)) {
         case 1:
@@ -24,7 +26,7 @@ std::string ByzantineNode::corruptBlockData(const std::string& originalData, int
             break;
         case 3:
             // Replace with fake data
-            ss << "FAKE_BLOCK_NODE_" << nodeId << "_" << std::time(nullptr);
+            ss << "FAKE_BLOCK_NODE_" << nodeId << "_" << time(nullptr);
             break;
         case 4:
             // Scramble original data
@@ -39,7 +41,7 @@ std::string ByzantineNode::corruptBlockData(const std::string& originalData, int
 }
 
 bool ByzantineNode::shouldSendInvalidBlock(NodeType type) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    uniform_real_distribution<double> dist(0.0, 1.0);
 
     switch(type) {
         case BYZANTINE_CORRUPT:
@@ -56,7 +58,7 @@ bool ByzantineNode::shouldSendInvalidBlock(NodeType type) {
 }
 
 bool ByzantineNode::shouldParticipate(NodeType type) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    uniform_real_distribution<double> dist(0.0, 1.0);
 
     switch(type) {
         case BYZANTINE_SILENT:
@@ -72,7 +74,7 @@ bool ByzantineNode::shouldParticipate(NodeType type) {
 }
 
 double ByzantineNode::getCorruptedValidity(NodeType type, double originalValidity) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    uniform_real_distribution<double> dist(0.0, 1.0);
 
     switch(type) {
         case BYZANTINE_CORRUPT:
@@ -97,15 +99,15 @@ double ByzantineNode::getCorruptedValidity(NodeType type, double originalValidit
     }
 }
 
-std::string ByzantineNode::generateDoubleSpendingBlock(int nodeId, int sequence) {
-    std::stringstream ss;
+string ByzantineNode::generateDoubleSpendingBlock(int nodeId, int sequence) {
+    stringstream ss;
     ss << "DOUBLE_SPEND_NODE_" << nodeId << "_SEQ_" << sequence
-       << "_TIME_" << std::time(nullptr) << "_AMOUNT_999999";
+       << "_TIME_" << time(nullptr) << "_AMOUNT_999999";
     return ss.str();
 }
 
 double ByzantineNode::manipulateReputationReport(NodeType type, double actualReputation) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    uniform_real_distribution<double> dist(0.0, 1.0);
 
     switch(type) {
         case BYZANTINE_CORRUPT:
@@ -126,7 +128,7 @@ double ByzantineNode::manipulateReputationReport(NodeType type, double actualRep
 }
 
 bool ByzantineNode::shouldDropMessage(NodeType type) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    uniform_real_distribution<double> dist(0.0, 1.0);
 
     switch(type) {
         case BYZANTINE_SILENT:
@@ -141,7 +143,7 @@ bool ByzantineNode::shouldDropMessage(NodeType type) {
 }
 
 bool ByzantineNode::shouldDelayMessage(NodeType type) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    uniform_real_distribution<double> dist(0.0, 1.0);
 
     switch(type) {
         case BYZANTINE_CORRUPT:
@@ -154,7 +156,7 @@ bool ByzantineNode::shouldDelayMessage(NodeType type) {
     }
 }
 
-std::string ByzantineNode::nodeTypeToString(NodeType type) {
+string ByzantineNode::nodeTypeToString(NodeType type) {
     switch(type) {
         case HONEST: return "HONEST";
         case BYZANTINE_SILENT: return "BYZANTINE_SILENT";

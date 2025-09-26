@@ -4,6 +4,8 @@
 #include <string>
 #include <random>
 
+using namespace std;
+
 enum NodeType {
     HONEST = 0,
     BYZANTINE_SILENT = 1,    // Silent/Fail-stop Byzantine
@@ -14,17 +16,17 @@ enum NodeType {
 
 class ByzantineNode {
 private:
-    static std::mt19937 rng;
+    static mt19937 rng;
 
 public:
     static void initializeRandom();
 
     // Byzantine behavior implementations
-    static std::string corruptBlockData(const std::string& originalData, int nodeId);
+    static string corruptBlockData(const string& originalData, int nodeId);
     static bool shouldSendInvalidBlock(NodeType type);
     static bool shouldParticipate(NodeType type);
     static double getCorruptedValidity(NodeType type, double originalValidity);
-    static std::string generateDoubleSpendingBlock(int nodeId, int sequence);
+    static string generateDoubleSpendingBlock(int nodeId, int sequence);
 
     // Reputation manipulation
     static double manipulateReputationReport(NodeType type, double actualReputation);

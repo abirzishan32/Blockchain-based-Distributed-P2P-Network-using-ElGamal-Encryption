@@ -9,6 +9,7 @@
 #include <algorithm>
 
 using namespace omnetpp;
+using namespace std;
 
 class Computer : public cSimpleModule {
 private:
@@ -20,10 +21,10 @@ private:
 
     // Fuzzy BFT components
     FuzzyBFT fuzzySystem;
-    std::map<int, double> nodeReputations;
-    std::map<std::string, int> blockVotes;
-    std::map<std::string, int> blockValidations;
-    std::map<std::string, std::set<int>> blockVoters;
+    map<int, double> nodeReputations;
+    map<string, int> blockVotes;
+    map<string, int> blockValidations;
+    map<string, set<int>> blockVoters;
     int totalNodes;
     double trustThreshold;
 
@@ -39,21 +40,21 @@ protected:
     virtual void finish() override;
 
     void createNewBlock();
-    void broadcastNewBlockSequentially(const std::string& blockData);
+    void broadcastNewBlockSequentially(const string& blockData);
     void handleBlockProposal(cMessage *msg);
     void handleFuzzyVote(cMessage *msg);
-    void displayBlockData(const Block& block, const std::string& action);
+    void displayBlockData(const Block& block, const string& action);
     void addBlockToChain(const Block& block);
 
     // Fuzzy BFT decision making
     double calculateNodeReputation(int nodeId);
-    double calculateBlockValidity(const std::string& blockData);
-    double calculateNetworkConsensus(const std::string& blockId);
-    bool makeFuzzyBFTDecision(int proposerNode, const std::string& blockData, const std::string& blockId);
+    double calculateBlockValidity(const string& blockData);
+    double calculateNetworkConsensus(const string& blockId);
+    bool makeFuzzyBFTDecision(int proposerNode, const string& blockData, const string& blockId);
     void updateNodeReputation(int nodeId, bool positiveAction);
 
     // Byzantine behaviors
-    void executeByzantineBehavior(const std::string& blockData);
+    void executeByzantineBehavior(const string& blockData);
     bool shouldBroadcast();
 
     // Utility methods
@@ -85,7 +86,7 @@ void Computer::initialize() {
     ByzantineNode::initializeRandom();
 
     // Set node colors based on type for visualization
-    std::string color, shape;
+    string color, shape;
     switch(nodeType) {
         case HONEST:
             color = "green";
@@ -169,7 +170,7 @@ void Computer::handleMessage(cMessage *msg) {
 }
 
 void Computer::createNewBlock() {
-    std::stringstream ss;
+    stringstream ss;
     ss << "FuzzyBFT_Block_N" << nodeId << "_T" << (int)simTime().dbl() 
        << "_Data[Transaction_" << (blocksProposed + 1) << "]";
 
@@ -194,7 +195,7 @@ void Computer::createNewBlock() {
 
             EV << "HONEST Node " << nodeId << " created legitimate block "
                << blockchain.getChainLength() << "\n";
-        } catch (const std::exception& e) {
+        } catch (const exception& e) {
             EV << "Error creating block in node " << nodeId << ": " << e.what() << "\n";
         }
     } else {
@@ -205,10 +206,10 @@ void Computer::createNewBlock() {
 }
 
 // **SEQUENTIAL MESSAGE SENDING - One by One**
-void Computer::broadcastNewBlockSequentially(const std::string& blockData) {
+void Computer::broadcastNewBlockSequentially(const string& blockData) {
     int totalGates = gateSize("port");
     int broadcastCount = 0;
-    std::vector<int> selectedGates;
+    vector<int> selectedGates;
 
     EV << "\n=== SEQUENTIAL BROADCAST STARTED ===\n"
        << "Node " << nodeId << " sending block sequentially to peers\n";
@@ -218,7 +219,7 @@ void Computer::broadcastNewBlockSequentially(const std::string& blockData) {
         int randomGate = intuniform(0, totalGates - 1);
 
         if (gate("port$o", randomGate)->isConnected() &&
-            std::find(selectedGates.begin(), selectedGates.end(), randomGate) == selectedGates.end()) {
+            find(selectedGates.begin(), selectedGates.end(), randomGate) == selectedGates.end()) {
 
             selectedGates.push_back(randomGate);
 
@@ -250,7 +251,7 @@ void Computer::broadcastNewBlockSequentially(const std::string& blockData) {
 }
 
 void Computer::handleBlockProposal(cMessage *msg) {
-    std::string blockData = msg->par("blockData").stringValue();
+    string blockData = msg->par("blockData").stringValue();
     int proposerNode = (int)msg->par("proposerNode").longValue();
     int sendOrder = msg->hasPar("sendOrder") ? (int)msg->par("sendOrder").longValue() : 0;
 
@@ -260,7 +261,7 @@ void Computer::handleBlockProposal(cMessage *msg) {
 
     try {
         Block block = Block::deserialize(blockData);
-        std::string blockId = block.getBlockIdentifier();
+        string blockId = block.getBlockIdentifier();
         
         // Display the received block data
         displayBlockData(block, "RECEIVED");
@@ -309,7 +310,7 @@ void Computer::handleBlockProposal(cMessage *msg) {
         EV << "Sent " << votesSent << " fuzzy votes\n"
            << "===============================\n\n";
 
-    } catch (const std::exception& e) {
+    } catch (const exception& e) {
         EV << "Node " << nodeId << " received malformed block from node " << proposerNode
            << " - automatic rejection. Error: " << e.what() << "\n";
         updateNodeReputation(proposerNode, false);
@@ -319,20 +320,20 @@ void Computer::handleBlockProposal(cMessage *msg) {
 }
 
 // **NEW: Display detailed block data**
-void Computer::displayBlockData(const Block& block, const std::string& action) {
+void Computer::displayBlockData(const Block& block, const string& action) {
     EV << "\n╔═══════════════════════════════════════════════════════════╗\n"
-       << "║                    BLOCK " << action << " - NODE " << std::setw(2) << nodeId << "                ║\n"
+       << "║                    BLOCK " << action << " - NODE " << setw(2) << nodeId << "                ║\n"
        << "╠═══════════════════════════════════════════════════════════╣\n"
-       << "║ Block Number    : " << std::setw(38) << block.getBlockNumber() << " ║\n"
-       << "║ Block Data      : " << std::setw(38) << block.getData().substr(0, 35) << "... ║\n"
-       << "║ Block ID        : " << std::setw(38) << block.getBlockIdentifier().substr(0, 35) << "... ║\n"
-       << "║ Previous Ref    : " << std::setw(38) << block.getPreviousBlockRef().substr(0, 35) << "... ║\n"
-       << "║ Encrypted Data  : " << std::setw(38) << (block.getEncryptedData().empty() ? "None" : "ElGamal Encrypted") << " ║\n"
-       << "║ Nonce           : " << std::setw(38) << block.getNonce() << " ║\n"
-       << "║ Timestamp       : " << std::setw(38) << simTime().str() << " ║\n";
+       << "║ Block Number    : " << setw(38) << block.getBlockNumber() << " ║\n"
+       << "║ Block Data      : " << setw(38) << block.getData().substr(0, 35) << "... ║\n"
+       << "║ Block ID        : " << setw(38) << block.getBlockIdentifier().substr(0, 35) << "... ║\n"
+       << "║ Previous Ref    : " << setw(38) << block.getPreviousBlockRef().substr(0, 35) << "... ║\n"
+       << "║ Encrypted Data  : " << setw(38) << (block.getEncryptedData().empty() ? "None" : "ElGamal Encrypted") << " ║\n"
+       << "║ Nonce           : " << setw(38) << block.getNonce() << " ║\n"
+       << "║ Timestamp       : " << setw(38) << simTime().str() << " ║\n";
     
     if (action == "ADDED") {
-        EV << "║ Chain Position  : " << std::setw(38) << blockchain.getChainLength() << " ║\n";
+        EV << "║ Chain Position  : " << setw(38) << blockchain.getChainLength() << " ║\n";
     }
     
     EV << "╚═══════════════════════════════════════════════════════════╝\n\n";
@@ -351,16 +352,16 @@ void Computer::addBlockToChain(const Block& block) {
         } else {
             EV << "Block validation failed - not added to blockchain\n";
         }
-    } catch (const std::exception& e) {
+    } catch (const exception& e) {
         EV << "Error adding block to blockchain: " << e.what() << "\n";
     }
 }
 
-void Computer::executeByzantineBehavior(const std::string& blockData) {
+void Computer::executeByzantineBehavior(const string& blockData) {
     updateNodeReputation(nodeId, false);
 
     if (ByzantineNode::shouldSendInvalidBlock(nodeType)) {
-        std::string corruptedData;
+        string corruptedData;
 
         switch(nodeType) {
             case BYZANTINE_CORRUPT: {
@@ -370,7 +371,7 @@ void Computer::executeByzantineBehavior(const std::string& blockData) {
             case BYZANTINE_DOUBLE: {
                 // Send multiple conflicting blocks sequentially
                 for (int i = 0; i < 2; i++) {
-                    std::string doubleData = ByzantineNode::generateDoubleSpendingBlock(nodeId, i);
+                    string doubleData = ByzantineNode::generateDoubleSpendingBlock(nodeId, i);
                     if (shouldBroadcast()) {
                         // Create fake block and display it
                         try {
@@ -410,7 +411,7 @@ void Computer::executeByzantineBehavior(const std::string& blockData) {
     }
 }
 
-bool Computer::makeFuzzyBFTDecision(int proposerNode, const std::string& blockData, const std::string& blockId) {
+bool Computer::makeFuzzyBFTDecision(int proposerNode, const string& blockData, const string& blockId) {
     try {
         double nodeReputation = calculateNodeReputation(proposerNode);
         double blockValidity = calculateBlockValidity(blockData);
@@ -426,7 +427,7 @@ bool Computer::makeFuzzyBFTDecision(int proposerNode, const std::string& blockDa
 
         logFuzzyDecision(proposerNode, nodeReputation, blockValidity, networkConsensus, trustLevel, decision);
         return decision;
-    } catch (const std::exception& e) {
+    } catch (const exception& e) {
         EV << "Error in fuzzy BFT decision for node " << nodeId << ": " << e.what() << "\n";
         return false;
     }
@@ -435,7 +436,7 @@ bool Computer::makeFuzzyBFTDecision(int proposerNode, const std::string& blockDa
 void Computer::logFuzzyDecision(int proposerNode, double reputation, double validity, double consensus, double trust, bool decision) {
     EV << "=== FUZZY BFT DECISION (Node " << nodeId << ") ===\n"
        << "  Evaluating block from Node " << proposerNode << "\n"
-       << "  Input 1 - Node Reputation: " << std::fixed << std::setprecision(3) << reputation << "\n"
+       << "  Input 1 - Node Reputation: " << fixed << setprecision(3) << reputation << "\n"
        << "  Input 2 - Block Validity: " << validity << "\n"
        << "  Input 3 - Network Consensus: " << consensus << "\n"
        << "  → Fuzzy Trust Level: " << trust << "\n"
@@ -450,7 +451,7 @@ double Computer::calculateNodeReputation(int nodeId) {
     return nodeReputations[nodeId];
 }
 
-double Computer::calculateBlockValidity(const std::string& blockData) {
+double Computer::calculateBlockValidity(const string& blockData) {
     try {
         Block block = Block::deserialize(blockData);
 
@@ -458,24 +459,24 @@ double Computer::calculateBlockValidity(const std::string& blockData) {
 
         double validity = 1.0;
 
-        std::string data = block.getData();
-        if (data.find("CORRUPT") != std::string::npos) validity *= 0.1;
-        if (data.find("MALICIOUS") != std::string::npos) validity *= 0.1;
-        if (data.find("FAKE") != std::string::npos) validity *= 0.0;
-        if (data.find("DOUBLE_SPEND") != std::string::npos) validity *= 0.0;
-        if (data.find("SCRAMBLED") != std::string::npos) validity *= 0.2;
+        string data = block.getData();
+        if (data.find("CORRUPT") != string::npos) validity *= 0.1;
+        if (data.find("MALICIOUS") != string::npos) validity *= 0.1;
+        if (data.find("FAKE") != string::npos) validity *= 0.0;
+        if (data.find("DOUBLE_SPEND") != string::npos) validity *= 0.0;
+        if (data.find("SCRAMBLED") != string::npos) validity *= 0.2;
 
         if (block.getBlockNumber() < 0) validity *= 0.3;
         if (data.empty()) validity *= 0.4;
 
-        return std::max(0.0, std::min(1.0, validity));
+        return max(0.0, min(1.0, validity));
 
     } catch (...) {
         return 0.0;
     }
 }
 
-double Computer::calculateNetworkConsensus(const std::string& blockId) {
+double Computer::calculateNetworkConsensus(const string& blockId) {
     if (blockValidations.find(blockId) == blockValidations.end()) {
         return 0.5;
     }
@@ -486,12 +487,12 @@ double Computer::calculateNetworkConsensus(const std::string& blockId) {
     if (totalVotes == 0) return 0.5;
 
     double consensus = (double)positiveVotes / totalVotes;
-    double confidence = std::min(1.0, (double)totalVotes / (totalNodes * 0.1));
+    double confidence = min(1.0, (double)totalVotes / (totalNodes * 0.1));
     return consensus * confidence + 0.5 * (1.0 - confidence);
 }
 
 void Computer::handleFuzzyVote(cMessage *msg) {
-    std::string blockId = msg->par("blockId").stringValue();
+    string blockId = msg->par("blockId").stringValue();
     double trustValue = msg->par("trustValue").doubleValue();
     int voterNode = (int)msg->par("voterNode").longValue();
 
@@ -520,7 +521,7 @@ void Computer::handleFuzzyVote(cMessage *msg) {
 void Computer::updateNodeReputation(int nodeId, bool positiveAction) {
     double currentRep = calculateNodeReputation(nodeId);
     double change = positiveAction ? 0.03 : -0.08;
-    nodeReputations[nodeId] = std::max(0.0, std::min(1.0, currentRep + change));
+    nodeReputations[nodeId] = max(0.0, min(1.0, currentRep + change));
 }
 
 bool Computer::shouldBroadcast() {
@@ -543,23 +544,23 @@ void Computer::finish() {
                            (double)blocksAccepted / (blocksAccepted + blocksRejected) : 0.0;
 
     EV << "\n╔═══════════════════════════════════════════════════════════╗\n"
-       << "║              FINAL BLOCKCHAIN STATISTICS - NODE " << std::setw(2) << nodeId << "         ║\n"
+       << "║              FINAL BLOCKCHAIN STATISTICS - NODE " << setw(2) << nodeId << "         ║\n"
        << "╠═══════════════════════════════════════════════════════════╣\n"
-       << "║ Node Type           : " << std::setw(38) << ByzantineNode::nodeTypeToString(nodeType) << " ║\n"
-       << "║ Blockchain Length   : " << std::setw(38) << blockchain.getChainLength() << " ║\n"
-       << "║ Blocks Proposed     : " << std::setw(38) << blocksProposed << " ║\n"
-       << "║ Blocks Accepted     : " << std::setw(38) << blocksAccepted << " ║\n"
-       << "║ Blocks Rejected     : " << std::setw(38) << blocksRejected << " ║\n"
-       << "║ Acceptance Rate     : " << std::setw(35) << (acceptanceRate * 100) << "% ║\n"
-       << "║ Byzantine Detected  : " << std::setw(38) << byzantineDetected << " ║\n"
-       << "║ Own Reputation      : " << std::setw(38) << nodeReputations[nodeId] << " ║\n"
-       << "║ Avg Network Rep.    : " << std::setw(38) << avgReputation << " ║\n"
+       << "║ Node Type           : " << setw(38) << ByzantineNode::nodeTypeToString(nodeType) << " ║\n"
+       << "║ Blockchain Length   : " << setw(38) << blockchain.getChainLength() << " ║\n"
+       << "║ Blocks Proposed     : " << setw(38) << blocksProposed << " ║\n"
+       << "║ Blocks Accepted     : " << setw(38) << blocksAccepted << " ║\n"
+       << "║ Blocks Rejected     : " << setw(38) << blocksRejected << " ║\n"
+       << "║ Acceptance Rate     : " << setw(35) << (acceptanceRate * 100) << "% ║\n"
+       << "║ Byzantine Detected  : " << setw(38) << byzantineDetected << " ║\n"
+       << "║ Own Reputation      : " << setw(38) << nodeReputations[nodeId] << " ║\n"
+       << "║ Avg Network Rep.    : " << setw(38) << avgReputation << " ║\n"
        << "╚═══════════════════════════════════════════════════════════╝\n";
     
     // Display final blockchain state
     if (blockchain.getChainLength() > 0) {
         EV << "\n=== FINAL BLOCKCHAIN STATE ===\n";
-        for (size_t i = 0; i < std::min((size_t)5, blockchain.getChainLength()); i++) {
+        for (size_t i = 0; i < min((size_t)5, blockchain.getChainLength()); i++) {
             Block* block = blockchain.getBlockAt(i);
             if (block) {
                 EV << "Block " << i << ": " << block->getData().substr(0, 50) << "...\n";
