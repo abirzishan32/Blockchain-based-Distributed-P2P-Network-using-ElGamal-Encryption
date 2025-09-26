@@ -3,42 +3,54 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include "SHA256.h"  // Add this include
+#include "ElGamal.h"
+
+using namespace std;
 
 class Block {
 private:
     int blockNumber;
     int nonce;
-    std::string data;
-    std::string previousHash;
-    std::string hash;
-
-    std::string calculateHash() const;
+    string data;
+    string encryptedData;
+    string previousBlockRef;
+    KeyPair keyPair;
+    long long sessionKey;
 
 public:
-    Block(int blockNum, const std::string& blockData, const std::string& prevHash);
+    // Default constructor for container compatibility
+    Block() : blockNumber(0), nonce(0), sessionKey(0) {}
+    
+    // Main constructor
+    Block(int blockNum, const string& blockData, const string& prevRef);
 
-    // Add copy constructor and assignment operator
+    // Copy constructor and assignment operator
     Block(const Block& other) = default;
     Block& operator=(const Block& other) = default;
 
     // Getters
     int getBlockNumber() const { return blockNumber; }
     int getNonce() const { return nonce; }
-    std::string getData() const { return data; }
-    std::string getPreviousHash() const { return previousHash; }
-    std::string getHash() const { return hash; }
+    string getData() const;
+    string getEncryptedData() const { return encryptedData; }
+    string getPreviousBlockRef() const { return previousBlockRef; }
+    KeyPair getKeyPair() const { return keyPair; }
 
     // Setters for deserialization
     void setNonce(int n) { nonce = n; }
-    void setHash(const std::string& h) { hash = h; }
+    void setEncryptedData(const string& encrypted) { encryptedData = encrypted; }
+    void setKeyPair(const KeyPair& key) { keyPair = key; }
+    void setSessionKey(long long key) { sessionKey = key; }
 
     // Validation
     bool isValidBlock() const;
 
+    // Block identifier based on encrypted content
+    string getBlockIdentifier() const;
+
     // Serialization for network transmission
-    std::string serialize() const;
-    static Block deserialize(const std::string& serialized);
+    string serialize() const;
+    static Block deserialize(const string& serialized);
 };
 
 #endif

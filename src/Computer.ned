@@ -18,8 +18,9 @@ package blockchainproject;
 simple Computer {
     parameters:
         int nodeId;
-        double miningInterval @unit(s) = default(10s);
-        @display("i=device/pc");
+        double miningInterval @unit(s) = default(uniform(10s, 20s));
+        int nodeType = default(0); // 0=HONEST, 1=BYZANTINE_SILENT, 2=BYZANTINE_CORRUPT, 3=BYZANTINE_DOUBLE, 4=BYZANTINE_RANDOM
+        @display("i=device/pc;is=s");
     gates:
-        inout port[];
+        inout port[];  // Remove fixed size, make it dynamic
 }

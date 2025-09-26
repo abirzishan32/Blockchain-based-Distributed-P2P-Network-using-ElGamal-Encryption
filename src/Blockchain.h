@@ -6,29 +6,35 @@
 #include <memory>
 #include <sstream>
 
+using namespace std;
+
 class Blockchain {
 private:
-    std::vector<std::unique_ptr<Block>> chain;
-
+    vector<unique_ptr<Block>> chain;
     Block createGenesisBlock();
 
 public:
     Blockchain();
 
-    void addBlock(const std::string& data);
+    void addBlock(const string& data);
+    void addBlock(const Block& block);  
     Block* getLatestBlock();
+    Block* getBlockAt(size_t index);   
     bool isChainValid() const;
 
     // Network synchronization methods
-    std::vector<Block> getChain() const;
-    bool replaceChain(const std::vector<Block>& newChain);
+    vector<Block> getChain() const;
+    bool replaceChain(const vector<Block>& newChain);
 
     // Getters
     size_t getChainLength() const { return chain.size(); }
 
+    // Display methods
+    void displayChain() const;  // NEW: Display entire chain
+
     // Serialization for network transmission
-    std::string serialize() const;
-    void deserialize(const std::string& serialized);
+    string serialize() const;
+    void deserialize(const string& serialized);
 };
 
 #endif

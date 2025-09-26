@@ -1,52 +1,87 @@
 #include "Block.h"
-#include "SHA256.h"
+#include "ElGamal.h"
+#include "PrimeGenerator.h"
 #include <sstream>
 
-Block::Block(int blockNum, const std::string& blockData, const std::string& prevHash)
-    : blockNumber(blockNum), nonce(0), data(blockData), previousHash(prevHash) {
-    hash = calculateHash();
+using namespace std;
+
+Block::Block(int blockNum, const string& blockData, const string& prevRef)
+    : blockNumber(blockNum), nonce(0), data(blockData), previousBlockRef(prevRef) {
+
+    // Generate ElGamal key pair for this block
+    keyPair = ElGamal::generateKeyPair();
+
+    // Generate random session key for encryption
+    sessionKey = PrimeGenerator::generateRandomInRange(100, keyPair.p - 100);
+
+    // Encrypt the block data
+    encryptedData = ElGamal::encrypt_message(blockData, sessionKey, keyPair);
 }
 
-std::string Block::calculateHash() const {
-    std::stringstream ss;
-    ss << blockNumber << nonce << data << previousHash;
-
-    // Use proper SHA256 hash function
-    return SHA256::hash(ss.str());
+string Block::getData() const {
+    // Decrypt data when requested
+    return ElGamal::decrypt_message(encryptedData, keyPair);
 }
 
 bool Block::isValidBlock() const {
-    return hash == calculateHash();
+    try {
+        // Validate by attempting to decrypt and comparing with original
+        std::string decrypted = ElGamal::decrypt_message(encryptedData, keyPair);
+        return !decrypted.empty() && decrypted == data;
+    } catch (...) {
+        return false;
+    }
 }
 
-std::string Block::serialize() const {
-    std::stringstream ss;
-    ss << blockNumber << "|" << nonce << "|" << data << "|" << previousHash << "|" << hash;
+string Block::getBlockIdentifier() const {
+    // Create identifier based on encrypted data and block number
+    stringstream ss;
+    ss << blockNumber << "_" << encryptedData.substr(0, 20); // First 20 chars of encrypted data
+    return ss.str();
+}
+
+string Block::serialize() const {
+    stringstream ss;
+    ss << blockNumber << "|"
+       << nonce << "|"
+       << data << "|"
+       << encryptedData << "|"
+       << previousBlockRef << "|"
+       << ElGamal::keyPairToString(keyPair) << "|"
+       << sessionKey;
     return ss.str();
 }
 
 Block Block::deserialize(const std::string& serialized) {
-    std::stringstream ss(serialized);
-    std::string item;
+    stringstream ss(serialized);
+    string item;
 
-    std::getline(ss, item, '|');
-    int blockNum = std::stoi(item);
+    getline(ss, item, '|');
+    int blockNum = stoi(item);
 
-    std::getline(ss, item, '|');
-    int blockNonce = std::stoi(item);
+    getline(ss, item, '|');
+    int blockNonce = stoi(item);
 
-    std::getline(ss, item, '|');
-    std::string blockData = item;
+    getline(ss, item, '|');
+    string blockData = item;
 
-    std::getline(ss, item, '|');
-    std::string prevHash = item;
+    getline(ss, item, '|');
+    string encrypted = item;
 
-    std::getline(ss, item, '|');
-    std::string blockHash = item;
+    getline(ss, item, '|');
+    string prevRef = item;
 
-    Block block(blockNum, blockData, prevHash);
+    getline(ss, item, '|');
+    KeyPair key = ElGamal::stringToKeyPair(item);
+
+    getline(ss, item, '|');
+    long long sKey = stoll(item);
+
+    Block block(blockNum, blockData, prevRef);
     block.setNonce(blockNonce);
-    block.setHash(blockHash);
+    block.setEncryptedData(encrypted);
+    block.setKeyPair(key);
+    block.setSessionKey(sKey);
 
     return block;
 }
