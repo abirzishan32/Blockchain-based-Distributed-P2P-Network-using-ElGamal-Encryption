@@ -40,11 +40,15 @@ public:
     
     // REMOVED: getKeyPair() - no more private key exposure!
 
-    // Setters for deserialization
+    // Setters for deserialization and mining
     void setNonce(int n) { nonce = n; }
     void setEncryptedData(const string& encrypted) { encryptedData = encrypted; }
     void setPublicKey(const PublicKey& pubKey) { publicKey = pubKey; }
     void setPublicSessionKeyHash(const string& hash) { publicSessionKeyHash = hash; }
+    
+    // Mining-related methods
+    string calculateMiningHash() const;
+    bool isMinedValid(int difficulty) const;
 
     // Validation
     bool isValidBlock() const;

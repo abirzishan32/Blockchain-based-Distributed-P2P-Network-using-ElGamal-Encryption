@@ -1,6 +1,7 @@
 #include "Block.h"
 #include "ElGamal.h"
 #include "PrimeGenerator.h"
+#include "HashUtils.h"
 #include <sstream>
 #include <iomanip>
 #include <functional>
@@ -31,20 +32,43 @@ string Block::getData() const {
     return ElGamal::decrypt_message(encryptedData, keyPair);
 }
 
+// Calculate hash for mining purposes
+string Block::calculateMiningHash() const {
+    stringstream ss;
+    ss << blockNumber << "|"
+       << encryptedData << "|"
+       << previousBlockRef << "|"
+       << ElGamal::publicKeyToString(publicKey) << "|"
+       << nonce;  // Nonce affects the hash!
+    
+    return HashUtils::calculateSHA256(ss.str());
+}
+
+// Validate if block was properly mined
+bool Block::isMinedValid(int difficulty) const {
+    string blockHash = calculateMiningHash();
+    return HashUtils::isHashValid(blockHash, difficulty);
+}
+
 bool Block::isValidBlock() const {
     try {
-        // Validate by attempting to decrypt and comparing with stored hash
+        // Validate structure and encryption
         std::string decrypted = ElGamal::decrypt_message(encryptedData, keyPair);
-        return !decrypted.empty() && !encryptedData.empty();
+        bool structurallyValid = !decrypted.empty() && !encryptedData.empty();
+        
+        // Also validate mining (if nonce > 0, assume it was mined)
+        bool miningValid = (nonce == 0) || isMinedValid(4); // Default difficulty 4
+        
+        return structurallyValid && miningValid;
     } catch (...) {
         return false;
     }
 }
 
 string Block::getBlockIdentifier() const {
-    // Create identifier based on encrypted data and block number
+    // Include nonce in identifier for mined blocks
     stringstream ss;
-    ss << blockNumber << "_" << encryptedData.substr(0, 20); // First 20 chars of encrypted data
+    ss << blockNumber << "_" << nonce << "_" << encryptedData.substr(0, 20);
     return ss.str();
 }
 

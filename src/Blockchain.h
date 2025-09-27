@@ -30,7 +30,7 @@ public:
     size_t getChainLength() const { return chain.size(); }
 
     // Display methods
-    void displayChain() const; 
+    void displayChain() const;  // NEW: Display entire chain
 
     // Serialization for network transmission
     string serialize() const;

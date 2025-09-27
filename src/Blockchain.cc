@@ -1,126 +1,68 @@
-#include "Blockchain.h"
+#ifndef BLOCK_H
+#define BLOCK_H
+#include <string>
 #include <sstream>
-#include <iostream>
 #include <iomanip>
+#include "ElGamal.h"
 
 using namespace std;
 
-Blockchain::Blockchain() {
-    chain.push_back(make_unique<Block>(createGenesisBlock()));
-}
+class Block {
+private:
+    int blockNumber;
+    int nonce;
+    string data;                    // Original data (never transmitted)
+    string encryptedData;          // Encrypted data for transmission
+    string previousBlockRef;
+    KeyPair keyPair;              // PRIVATE - never transmitted
+    PublicKey publicKey;          // PUBLIC - safe for transmission
+    long long sessionKey;         // PRIVATE - never transmitted
+    string publicSessionKeyHash;  // PUBLIC - hash of session key for verification
 
-Block Blockchain::createGenesisBlock() {
-    return Block(0, "Genesis Block - Fuzzy BFT Blockchain Network", "0");
-}
-
-void Blockchain::addBlock(const string& data) {
-    Block* previousBlock = getLatestBlock();
-    Block newBlock(chain.size(), data, previousBlock->getBlockIdentifier());
-    chain.push_back(make_unique<Block>(newBlock));
-}
-
-// NEW: Add existing block
-void Blockchain::addBlock(const Block& block) {
-    chain.push_back(make_unique<Block>(block));
-}
-
-Block* Blockchain::getLatestBlock() {
-    return chain.back().get();
-}
-
-// NEW: Get block by index
-Block* Blockchain::getBlockAt(size_t index) {
-    if (index >= chain.size()) return nullptr;
-    return chain[index].get();
-}
-
-bool Blockchain::isChainValid() const {
-    for (size_t i = 1; i < chain.size(); i++) {
-        const Block& currentBlock = *chain[i];
-        const Block& previousBlock = *chain[i-1];
-
-        if (!currentBlock.isValidBlock()) {
-            return false;
-        }
-
-        if (currentBlock.getPreviousBlockRef() != previousBlock.getBlockIdentifier()) {
-            return false;
-        }
-    }
-    return true;
-}
-
-// NEW: Display entire blockchain
-void Blockchain::displayChain() const {
-    cout << "\n╔══════════════════════════════════════════╗\n";
-    cout << "║            BLOCKCHAIN STATE              ║\n";
-    cout << "╠══════════════════════════════════════════╣\n";
-    cout << "║ Total Blocks: " << setw(26) << chain.size() << " ║\n";
-    cout << "╠══════════════════════════════════════════╣\n";
+public:
+    // Default constructor for container compatibility
+    Block() : blockNumber(0), nonce(0), sessionKey(0) {}
     
-    for (size_t i = 0; i < chain.size(); i++) {
-        const Block& block = *chain[i];
-        cout << "║ Block " << setw(2) << i << ": " << setw(29) << block.getData().substr(0, 29) << " ║\n";
-        cout << "║   ID: " << setw(33) << block.getBlockIdentifier().substr(0, 33) << " ║\n";
-        if (i < chain.size() - 1) {
-            cout << "╠──────────────────────────────────────────╣\n";
-        }
-    }
+    // Main constructor
+    Block(int blockNum, const string& blockData, const string& prevRef);
+
+    // Copy constructor and assignment operator
+    Block(const Block& other) = default;
+    Block& operator=(const Block& other) = default;
+
+    // Getters
+    int getBlockNumber() const { return blockNumber; }
+    int getNonce() const { return nonce; }
+    string getData() const;  // Decrypts data using private key
+    string getEncryptedData() const { return encryptedData; }
+    string getPreviousBlockRef() const { return previousBlockRef; }
+    PublicKey getPublicKey() const { return publicKey; }  // SAFE: only public key
     
-    cout << "╚══════════════════════════════════════════╝\n\n";
-}
+    // REMOVED: getKeyPair() - no more private key exposure!
 
-vector<Block> Blockchain::getChain() const {
-    vector<Block> result;
-    for (const auto& block : chain) {
-        result.push_back(*block);
-    }
-    return result;
-}
+    // Setters for deserialization and mining
+    void setNonce(int n) { nonce = n; }
+    void setEncryptedData(const string& encrypted) { encryptedData = encrypted; }
+    void setPublicKey(const PublicKey& pubKey) { publicKey = pubKey; }
+    void setPublicSessionKeyHash(const string& hash) { publicSessionKeyHash = hash; }
+    
+    // Mining-related methods
+    string calculateMiningHash() const;
+    bool isMinedValid(int difficulty) const;
 
-bool Blockchain::replaceChain(const vector<Block>& newChain) {
-    if (newChain.size() <= chain.size()) {
-        return false;
-    }
+    // Validation
+    bool isValidBlock() const;
 
-    // Validate new chain
-    for (size_t i = 1; i < newChain.size(); i++) {
-        if (!newChain[i].isValidBlock()) {
-            return false;
-        }
-        if (i > 0 && newChain[i].getPreviousBlockRef() != newChain[i-1].getBlockIdentifier()) {
-            return false;
-        }
-    }
+    // Block identifier based on encrypted content
+    string getBlockIdentifier() const;
 
-    // Replace chain
-    chain.clear();
-    for (const Block& block : newChain) {
-        chain.push_back(make_unique<Block>(block));
-    }
+    // SECURE serialization - no private keys transmitted
+    string serialize() const;
+    static Block deserialize(const string& serialized);
+    
+private:
+    // Generate hash of session key for verification
+    string generateSessionKeyHash(long long sessionKey) const;
+};
 
-    return true;
-}
-
-string Blockchain::serialize() const {
-    string result;
-    for (size_t i = 0; i < chain.size(); i++) {
-        result += chain[i]->serialize();
-        if (i < chain.size() - 1) {
-            result += ";";
-        }
-    }
-    return result;
-}
-
-void Blockchain::deserialize(const string& serialized) {
-    chain.clear();
-
-    stringstream ss(serialized);
-    string blockStr;
-
-    while (getline(ss, blockStr, ';')) {
-        Block block = Block::deserialize(blockStr);
-        chain.push_back(make_unique<Block>(block));
-    }
-}
+#endif
