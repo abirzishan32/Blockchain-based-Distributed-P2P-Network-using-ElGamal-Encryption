@@ -107,6 +107,7 @@ class FuzzyBFT {
 
 ## 🔄 Complete System Workflow
 Here is the complete workflow illustrating the interactions between components:
+
 ```mermaid
 flowchart TD
     %% Network Initialization Phase
@@ -141,7 +142,7 @@ flowchart TD
     U --> V[Set Mining Difficulty = 4 Leading Zeros]
     V --> W[Initialize Nonce = 0]
     W --> X[Calculate Block Hash with Current Nonce]
-    X --> Y[Hash = SHA256 of: BlockNum|EncryptedData|PrevRef|PublicKey|Nonce]
+    X --> Y[Hash = SHA256 of BlockNum + EncryptedData + PrevRef + PublicKey + Nonce]
     Y --> Z{Hash Valid?<br/>Starts with 0000?}
     Z -->|No| AA[Increment Nonce]
     AA --> AB{Nonce < MaxAttempts?}
@@ -186,9 +187,9 @@ flowchart TD
     CK --> CL[Consensus Membership: LOW/MEDIUM/HIGH]
     
     CL --> CM[Step 3: Calculate Rule Strength for Each of 17 Rules]
-    CM --> CN[Rule Strength = MIN Reputation, Validity, Consensus × Rule Weight]
+    CM --> CN[Rule Strength = MIN of Reputation, Validity, Consensus × Rule Weight]
     CN --> CO[Step 4: Calculate Consequence for Each Rule]
-    CO --> CP[Consequence = MIN Rule Strength, Output Membership]
+    CO --> CP[Consequence = MIN of Rule Strength and Output Membership]
     CP --> CQ[Step 5: Aggregate All Consequences using MAX Operator]
     CQ --> CR[Step 6: Defuzzify using Center of Gravity]
     CR --> CS[Final Trust Value = Weighted Centroid]
@@ -268,6 +269,7 @@ flowchart TD
     class CC,CD,CE,CF,CG,CH,CI,CJ,CK,CL,CM,CN,CO,CP,CQ,CR,CS,CT fuzzy
     class CY,EA,EB,EC,ED,EE,EF,EG blockchain
 ```
+
 
 ### 1. **Network Initialization Phase**
 ```mermaid
