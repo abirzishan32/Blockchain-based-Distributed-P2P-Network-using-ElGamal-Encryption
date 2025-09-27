@@ -11,11 +11,13 @@ class Block {
 private:
     int blockNumber;
     int nonce;
-    string data;
-    string encryptedData;
+    string data;                    // Original data (never transmitted)
+    string encryptedData;          // Encrypted data for transmission
     string previousBlockRef;
-    KeyPair keyPair;
-    long long sessionKey;
+    KeyPair keyPair;              // PRIVATE - never transmitted
+    PublicKey publicKey;          // PUBLIC - safe for transmission
+    long long sessionKey;         // PRIVATE - never transmitted
+    string publicSessionKeyHash;  // PUBLIC - hash of session key for verification
 
 public:
     // Default constructor for container compatibility
@@ -31,16 +33,18 @@ public:
     // Getters
     int getBlockNumber() const { return blockNumber; }
     int getNonce() const { return nonce; }
-    string getData() const;
+    string getData() const;  // Decrypts data using private key
     string getEncryptedData() const { return encryptedData; }
     string getPreviousBlockRef() const { return previousBlockRef; }
-    KeyPair getKeyPair() const { return keyPair; }
+    PublicKey getPublicKey() const { return publicKey; }  // SAFE: only public key
+    
+    // REMOVED: getKeyPair() - no more private key exposure!
 
     // Setters for deserialization
     void setNonce(int n) { nonce = n; }
     void setEncryptedData(const string& encrypted) { encryptedData = encrypted; }
-    void setKeyPair(const KeyPair& key) { keyPair = key; }
-    void setSessionKey(long long key) { sessionKey = key; }
+    void setPublicKey(const PublicKey& pubKey) { publicKey = pubKey; }
+    void setPublicSessionKeyHash(const string& hash) { publicSessionKeyHash = hash; }
 
     // Validation
     bool isValidBlock() const;
@@ -48,9 +52,13 @@ public:
     // Block identifier based on encrypted content
     string getBlockIdentifier() const;
 
-    // Serialization for network transmission
+    // SECURE serialization - no private keys transmitted
     string serialize() const;
     static Block deserialize(const string& serialized);
+    
+private:
+    // Generate hash of session key for verification
+    string generateSessionKeyHash(long long sessionKey) const;
 };
 
 #endif

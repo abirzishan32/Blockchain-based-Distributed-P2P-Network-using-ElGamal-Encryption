@@ -49,32 +49,45 @@ KeyPair ElGamal::generateKeyPair(long long p, long long e1, long long d) {
     return key;
 }
 
-std::pair<long long, long long> ElGamal::encrypt_char(long long m, long long r, const KeyPair& key) {
-    long long c1 = mod_exp(key.e1, r, key.p);
-    long long c2 = (m * mod_exp(key.e2, r, key.p)) % key.p;
+// NEW: Extract only public components
+PublicKey ElGamal::extractPublicKey(const KeyPair& keyPair) {
+    PublicKey pubKey;
+    pubKey.e1 = keyPair.e1;
+    pubKey.e2 = keyPair.e2;
+    pubKey.p = keyPair.p;
+    return pubKey;
+}
+
+// UPDATED: Use PublicKey for encryption (no private key needed)
+std::pair<long long, long long> ElGamal::encrypt_char(long long m, long long r, const PublicKey& publicKey) {
+    long long c1 = mod_exp(publicKey.e1, r, publicKey.p);
+    long long c2 = (m * mod_exp(publicKey.e2, r, publicKey.p)) % publicKey.p;
     return {c1, c2};
 }
 
-long long ElGamal::decrypt_char(const std::pair<long long, long long>& ciphertext, const KeyPair& key) {
+// Decryption still uses private key (only locally)
+long long ElGamal::decrypt_char(const std::pair<long long, long long>& ciphertext, const KeyPair& keyPair) {
     long long c1 = ciphertext.first;
     long long c2 = ciphertext.second;
-    long long c1d = mod_exp(c1, key.d, key.p);
-    long long inv = mod_inverse(c1d, key.p);
-    return (c2 * inv) % key.p;
+    long long c1d = mod_exp(c1, keyPair.d, keyPair.p);
+    long long inv = mod_inverse(c1d, keyPair.p);
+    return (c2 * inv) % keyPair.p;
 }
 
-std::string ElGamal::encrypt_message(const std::string& message, long long r, const KeyPair& key) {
+// UPDATED: Encryption uses PublicKey only
+std::string ElGamal::encrypt_message(const std::string& message, long long r, const PublicKey& publicKey) {
     std::ostringstream oss;
     for (size_t i = 0; i < message.length(); i++) {
         long long m = (unsigned char)message[i];
-        auto cipher = encrypt_char(m, r + i, key); // Use different r for each char
+        auto cipher = encrypt_char(m, r + i, publicKey); // Use different r for each char
         oss << cipher.first << "," << cipher.second;
         if (i < message.length() - 1) oss << ";";
     }
     return oss.str();
 }
 
-std::string ElGamal::decrypt_message(const std::string& ciphertext, const KeyPair& key) {
+// Decryption uses full KeyPair (private key)
+std::string ElGamal::decrypt_message(const std::string& ciphertext, const KeyPair& keyPair) {
     std::stringstream ss(ciphertext);
     std::string block;
     std::string result;
@@ -86,34 +99,35 @@ std::string ElGamal::decrypt_message(const std::string& ciphertext, const KeyPai
 
         long long c1 = std::stoll(block.substr(0, pos));
         long long c2 = std::stoll(block.substr(pos + 1));
-        long long m = decrypt_char({c1, c2}, key);
+        long long m = decrypt_char({c1, c2}, keyPair);
         result.push_back((char)m);
     }
     return result;
 }
 
-std::string ElGamal::keyPairToString(const KeyPair& key) {
+// NEW: SECURE serialization - public key only
+std::string ElGamal::publicKeyToString(const PublicKey& publicKey) {
     std::ostringstream oss;
-    oss << key.d << ":" << key.e1 << ":" << key.e2 << ":" << key.p;
+    oss << publicKey.e1 << ":" << publicKey.e2 << ":" << publicKey.p;
+    // NO PRIVATE KEY IN TRANSMISSION!
     return oss.str();
 }
 
-KeyPair ElGamal::stringToKeyPair(const std::string& keyStr) {
+// NEW: SECURE deserialization - public key only
+PublicKey ElGamal::stringToPublicKey(const std::string& keyStr) {
     std::stringstream ss(keyStr);
     std::string item;
-    KeyPair key;
+    PublicKey publicKey;
 
     std::getline(ss, item, ':');
-    key.d = std::stoll(item);
+    publicKey.e1 = std::stoll(item);
 
     std::getline(ss, item, ':');
-    key.e1 = std::stoll(item);
+    publicKey.e2 = std::stoll(item);
 
     std::getline(ss, item, ':');
-    key.e2 = std::stoll(item);
+    publicKey.p = std::stoll(item);
 
-    std::getline(ss, item, ':');
-    key.p = std::stoll(item);
-
-    return key;
+    return publicKey;
 }
+

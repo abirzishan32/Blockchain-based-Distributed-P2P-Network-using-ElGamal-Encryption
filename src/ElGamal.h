@@ -6,8 +6,13 @@
 #include <utility>
 
 struct KeyPair {
-    long long d;       // private key
-    long long e1, e2;  // public key
+    long long d;       // private key - NEVER TRANSMITTED
+    long long e1, e2;  // public key components
+    long long p;       // prime modulus
+};
+
+struct PublicKey {
+    long long e1, e2;  // public key components only
     long long p;       // prime modulus
 };
 
@@ -24,15 +29,21 @@ private:
 public:
     static KeyPair generateKeyPair();
     static KeyPair generateKeyPair(long long p, long long e1, long long d);
+    
+    // Extract public key from key pair (SAFE for transmission)
+    static PublicKey extractPublicKey(const KeyPair& keyPair);
 
-    static std::pair<long long, long long> encrypt_char(long long m, long long r, const KeyPair& key);
-    static long long decrypt_char(const std::pair<long long, long long>& ciphertext, const KeyPair& key);
+    static std::pair<long long, long long> encrypt_char(long long m, long long r, const PublicKey& publicKey);
+    static long long decrypt_char(const std::pair<long long, long long>& ciphertext, const KeyPair& keyPair);
 
-    static std::string encrypt_message(const std::string& message, long long r, const KeyPair& key);
-    static std::string decrypt_message(const std::string& ciphertext, const KeyPair& key);
+    static std::string encrypt_message(const std::string& message, long long r, const PublicKey& publicKey);
+    static std::string decrypt_message(const std::string& ciphertext, const KeyPair& keyPair);
 
-    static std::string keyPairToString(const KeyPair& key);
-    static KeyPair stringToKeyPair(const std::string& keyStr);
+    // SECURE serialization - only public key components
+    static std::string publicKeyToString(const PublicKey& publicKey);
+    static PublicKey stringToPublicKey(const std::string& keyStr);
+    
+
 };
 
 #endif

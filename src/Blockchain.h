@@ -17,9 +17,9 @@ public:
     Blockchain();
 
     void addBlock(const string& data);
-    void addBlock(const Block& block);
+    void addBlock(const Block& block);  // NEW: Add existing block
     Block* getLatestBlock();
-    Block* getBlockAt(size_t index); 
+    Block* getBlockAt(size_t index);   // NEW: Get block by index
     bool isChainValid() const;
 
     // Network synchronization methods
@@ -30,7 +30,7 @@ public:
     size_t getChainLength() const { return chain.size(); }
 
     // Display methods
-    void displayChain() const;
+    void displayChain() const; 
 
     // Serialization for network transmission
     string serialize() const;

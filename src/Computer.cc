@@ -319,16 +319,26 @@ void Computer::handleBlockProposal(cMessage *msg) {
     }
 }
 
-// **NEW: Display detailed block data**
+// Display detailed block data
+
 void Computer::displayBlockData(const Block& block, const string& action) {
     EV << "\n╔═══════════════════════════════════════════════════════════╗\n"
        << "║                    BLOCK " << action << " - NODE " << setw(2) << nodeId << "                ║\n"
        << "╠═══════════════════════════════════════════════════════════╣\n"
-       << "║ Block Number    : " << setw(38) << block.getBlockNumber() << " ║\n"
-       << "║ Block Data      : " << setw(38) << block.getData().substr(0, 35) << "... ║\n"
-       << "║ Block ID        : " << setw(38) << block.getBlockIdentifier().substr(0, 35) << "... ║\n"
+       << "║ Block Number    : " << setw(38) << block.getBlockNumber() << " ║\n";
+    
+    try {
+        string blockData = block.getData(); // This will only work if we have private key
+        EV << "║ Block Data      : " << setw(38) << blockData.substr(0, 35) << "... ║\n";
+    } catch (...) {
+        EV << "║ Block Data      : " << setw(38) << "[ENCRYPTED - Cannot Decrypt]" << " ║\n";
+    }
+    
+    EV << "║ Block ID        : " << setw(38) << block.getBlockIdentifier().substr(0, 35) << "... ║\n"
        << "║ Previous Ref    : " << setw(38) << block.getPreviousBlockRef().substr(0, 35) << "... ║\n"
        << "║ Encrypted Data  : " << setw(38) << (block.getEncryptedData().empty() ? "None" : "ElGamal Encrypted") << " ║\n"
+       << "║ Public Key      : " << setw(38) << "Available (Secure)" << " ║\n"
+       << "║ Private Key     : " << setw(38) << (action == "CREATED" ? "Secured Locally" : "Not Available") << " ║\n"
        << "║ Nonce           : " << setw(38) << block.getNonce() << " ║\n"
        << "║ Timestamp       : " << setw(38) << simTime().str() << " ║\n";
     
@@ -455,19 +465,24 @@ double Computer::calculateBlockValidity(const string& blockData) {
     try {
         Block block = Block::deserialize(blockData);
 
-        if (!block.isValidBlock()) return 0.0;
-
+        // Basic structural validation
+        if (block.getEncryptedData().empty()) return 0.0;
+        
         double validity = 1.0;
-
-        string data = block.getData();
-        if (data.find("CORRUPT") != string::npos) validity *= 0.1;
-        if (data.find("MALICIOUS") != string::npos) validity *= 0.1;
-        if (data.find("FAKE") != string::npos) validity *= 0.0;
-        if (data.find("DOUBLE_SPEND") != string::npos) validity *= 0.0;
-        if (data.find("SCRAMBLED") != string::npos) validity *= 0.2;
-
+        
+        // Check if encrypted data looks valid
+        string encData = block.getEncryptedData();
+        if (encData.find(",") == string::npos || encData.find(";") == string::npos) {
+            validity *= 0.3; // Malformed encrypted data
+        }
+        
+        // Check if public key parameters are reasonable
+        PublicKey pubKey = block.getPublicKey();
+        if (pubKey.p < 1000 || pubKey.e1 < 2 || pubKey.e2 < 2) {
+            validity *= 0.2; // Suspicious key parameters
+        }
+        
         if (block.getBlockNumber() < 0) validity *= 0.3;
-        if (data.empty()) validity *= 0.4;
 
         return max(0.0, min(1.0, validity));
 

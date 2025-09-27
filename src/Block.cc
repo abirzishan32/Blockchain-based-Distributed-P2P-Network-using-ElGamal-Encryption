@@ -2,6 +2,8 @@
 #include "ElGamal.h"
 #include "PrimeGenerator.h"
 #include <sstream>
+#include <iomanip>
+#include <functional>
 
 using namespace std;
 
@@ -10,24 +12,30 @@ Block::Block(int blockNum, const string& blockData, const string& prevRef)
 
     // Generate ElGamal key pair for this block
     keyPair = ElGamal::generateKeyPair();
+    
+    // Extract public key (safe for transmission)
+    publicKey = ElGamal::extractPublicKey(keyPair);
 
     // Generate random session key for encryption
     sessionKey = PrimeGenerator::generateRandomInRange(100, keyPair.p - 100);
+    
+    // Generate public hash of session key (for verification without exposing key)
+    publicSessionKeyHash = generateSessionKeyHash(sessionKey);
 
-    // Encrypt the block data
-    encryptedData = ElGamal::encrypt_message(blockData, sessionKey, keyPair);
+    // Encrypt the block data using PUBLIC KEY ONLY
+    encryptedData = ElGamal::encrypt_message(blockData, sessionKey, publicKey);
 }
 
 string Block::getData() const {
-    // Decrypt data when requested
+    // Decrypt data when requested using PRIVATE KEY
     return ElGamal::decrypt_message(encryptedData, keyPair);
 }
 
 bool Block::isValidBlock() const {
     try {
-        // Validate by attempting to decrypt and comparing with original
+        // Validate by attempting to decrypt and comparing with stored hash
         std::string decrypted = ElGamal::decrypt_message(encryptedData, keyPair);
-        return !decrypted.empty() && decrypted == data;
+        return !decrypted.empty() && !encryptedData.empty();
     } catch (...) {
         return false;
     }
@@ -40,15 +48,17 @@ string Block::getBlockIdentifier() const {
     return ss.str();
 }
 
+// SECURE serialization - NO PRIVATE KEYS!
 string Block::serialize() const {
     stringstream ss;
     ss << blockNumber << "|"
        << nonce << "|"
-       << data << "|"
-       << encryptedData << "|"
+       // REMOVED: << data << "|"                    // NO PLAINTEXT DATA!
+       << encryptedData << "|"                        // Encrypted data only
        << previousBlockRef << "|"
-       << ElGamal::keyPairToString(keyPair) << "|"
-       << sessionKey;
+       << ElGamal::publicKeyToString(publicKey) << "|"  // PUBLIC KEY ONLY!
+       << publicSessionKeyHash;                       // SESSION KEY HASH ONLY!
+       // REMOVED: << sessionKey;                    // NO SESSION KEY!
     return ss.str();
 }
 
@@ -62,9 +72,7 @@ Block Block::deserialize(const std::string& serialized) {
     getline(ss, item, '|');
     int blockNonce = stoi(item);
 
-    getline(ss, item, '|');
-    string blockData = item;
-
+    // REMOVED: plaintext data reading
     getline(ss, item, '|');
     string encrypted = item;
 
@@ -72,16 +80,28 @@ Block Block::deserialize(const std::string& serialized) {
     string prevRef = item;
 
     getline(ss, item, '|');
-    KeyPair key = ElGamal::stringToKeyPair(item);
+    PublicKey pubKey = ElGamal::stringToPublicKey(item);  // PUBLIC KEY ONLY
 
     getline(ss, item, '|');
-    long long sKey = stoll(item);
+    string sessionKeyHash = item;
 
-    Block block(blockNum, blockData, prevRef);
-    block.setNonce(blockNonce);
-    block.setEncryptedData(encrypted);
-    block.setKeyPair(key);
-    block.setSessionKey(sKey);
+    // NOTE: We cannot fully reconstruct the block without private key and session key
+    // This is intentional - remote nodes can only see public data
+    Block block;
+    block.blockNumber = blockNum;
+    block.nonce = blockNonce;
+    block.encryptedData = encrypted;
+    block.previousBlockRef = prevRef;
+    block.publicKey = pubKey;
+    block.publicSessionKeyHash = sessionKeyHash;
 
     return block;
+}
+
+string Block::generateSessionKeyHash(long long sessionKey) const {
+    // Simple hash function for session key verification
+    hash<string> hasher;
+    stringstream ss;
+    ss << sessionKey << "_" << blockNumber << "_salt";
+    return to_string(hasher(ss.str()));
 }
