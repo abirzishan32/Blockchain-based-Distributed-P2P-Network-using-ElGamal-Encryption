@@ -5,7 +5,7 @@ std::vector<long long> PrimeGenerator::largePrimes;
 std::mt19937 PrimeGenerator::rng(std::chrono::steady_clock::now().time_since_epoch().count());
 
 void PrimeGenerator::initializePrimes() {
-    // UPDATED: Much larger prime numbers for better security
+
     largePrimes = {
 
         982451653LL, 982451707LL, 982451743LL, 982451747LL, 982451749LL,
