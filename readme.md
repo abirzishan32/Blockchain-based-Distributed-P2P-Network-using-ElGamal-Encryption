@@ -106,6 +106,168 @@ class FuzzyBFT {
 ```
 
 ## 🔄 Complete System Workflow
+Here is the complete workflow illustrating the interactions between components:
+```mermaid
+flowchart TD
+    %% Network Initialization Phase
+    A[Network Startup] --> B[Initialize Nodes]
+    B --> C[Set Node Types: HONEST/BYZANTINE_SILENT/BYZANTINE_CORRUPT/BYZANTINE_DOUBLE/BYZANTINE_RANDOM]
+    C --> D[Create Genesis Block]
+    D --> E[Establish P2P Connections - Fully Connected Network]
+    E --> F[Initialize Fuzzy BFT System with 17 Rules]
+    F --> G[Set Trust Threshold = 0.55]
+    G --> H[Schedule Block Timer Events]
+    
+    %% Block Creation & Mining Workflow
+    H --> I[Block Timer Event Triggered]
+    I --> J{Node Type Check}
+    
+    %% Honest Node Path
+    J -->|HONEST| K[Create New Block Data]
+    K --> L[ElGamal Key Generation Process]
+    
+    %% ElGamal Encryption Detailed Steps
+    L --> M[Step 1: Generate Large Prime p]
+    M --> N[Step 2: Select Generator g = 2]
+    N --> O[Step 3: Choose Private Key d randomly]
+    O --> P[Step 4: Calculate Public Key e2 = g^d mod p]
+    P --> Q[Step 5: Generate Session Key r]
+    Q --> R[Step 6: Encrypt Data Character by Character]
+    R --> S[c1 = g^r mod p, c2 = m * e2^r mod p]
+    S --> T[Store Encrypted Data + Public Key Only]
+    
+    %% Mining Process - SHA256 Proof of Work
+    T --> U[Start Mining Engine]
+    U --> V[Set Mining Difficulty = 4 Leading Zeros]
+    V --> W[Initialize Nonce = 0]
+    W --> X[Calculate Block Hash with Current Nonce]
+    X --> Y[Hash = SHA256 of: BlockNum|EncryptedData|PrevRef|PublicKey|Nonce]
+    Y --> Z{Hash Valid?<br/>Starts with 0000?}
+    Z -->|No| AA[Increment Nonce]
+    AA --> AB{Nonce < MaxAttempts?}
+    AB -->|Yes| X
+    AB -->|No| AC[Mining Failed]
+    Z -->|Yes| AD[Golden Nonce Found!]
+    AD --> AE[Update Block with Golden Nonce]
+    AE --> AF[Calculate Hash Rate & Mining Stats]
+    AF --> AG[Sequential Block Broadcast]
+    
+    %% Byzantine Node Paths
+    J -->|BYZANTINE_SILENT| BH[20% Participation Rate]
+    J -->|BYZANTINE_CORRUPT| BI[Corrupt Block Data]
+    J -->|BYZANTINE_DOUBLE| BJ[Generate Double-Spending Blocks]
+    J -->|BYZANTINE_RANDOM| BK[Random Malicious Behavior]
+    
+    BI --> BL[Add Malicious Prefix/Suffix]
+    BJ --> BM[Create Conflicting Transactions]
+    BK --> BN[50% Chance Invalid Block]
+    BH --> BO{Should Participate?}
+    BO -->|No| BZ[Silent - No Action]
+    BO -->|Yes| BP[Limited Broadcast]
+    BL --> BP
+    BM --> BP
+    BN --> BP
+    
+    %% Block Reception & Fuzzy BFT Process
+    AG --> CA[Block Received by Peer Nodes]
+    BP --> CA
+    CA --> CB[Deserialize Block - Public Data Only]
+    CB --> CC[Start Fuzzy BFT Evaluation]
+    
+    %% Fuzzy BFT - 6 Step Mamdani Process
+    CC --> CD[Step 1: Initialize 17 Fuzzy Rules]
+    CD --> CE[Step 2A: Fuzzify Node Reputation]
+    CE --> CF[Reputation Membership: LOW/MEDIUM/HIGH<br/>Trapezoidal & Triangular Functions]
+    CF --> CG[Step 2B: Fuzzify Block Validity]
+    CG --> CH[Check: Encrypted Data Structure, Public Key Parameters, Mining PoW]
+    CH --> CI[Validity Membership: LOW/MEDIUM/HIGH]
+    CI --> CJ[Step 2C: Fuzzify Network Consensus]
+    CJ --> CK[Consensus = Positive Votes / Total Votes]
+    CK --> CL[Consensus Membership: LOW/MEDIUM/HIGH]
+    
+    CL --> CM[Step 3: Calculate Rule Strength for Each of 17 Rules]
+    CM --> CN[Rule Strength = MIN Reputation, Validity, Consensus × Rule Weight]
+    CN --> CO[Step 4: Calculate Consequence for Each Rule]
+    CO --> CP[Consequence = MIN Rule Strength, Output Membership]
+    CP --> CQ[Step 5: Aggregate All Consequences using MAX Operator]
+    CQ --> CR[Step 6: Defuzzify using Center of Gravity]
+    CR --> CS[Final Trust Value = Weighted Centroid]
+    
+    %% BFT Decision
+    CS --> CT{Trust ≥ 0.55?}
+    CT -->|Yes| CU[ACCEPT Block]
+    CT -->|No| CV[REJECT Block]
+    
+    %% Block Acceptance Path
+    CU --> CW[Validate Mining Proof-of-Work]
+    CW --> CX{PoW Valid?}
+    CX -->|Yes| CY[Add Block to Local Blockchain]
+    CX -->|No| CZ[Reject - Invalid Mining]
+    CY --> DA[Update Node Reputation +0.03]
+    CZ --> DB[Update Node Reputation -0.08]
+    
+    %% Block Rejection Path
+    CV --> DB
+    DB --> DC[Send Fuzzy Vote to Random Peers]
+    DA --> DC
+    
+    %% Voting & Consensus Process
+    DC --> DD[Collect Fuzzy Votes from Network]
+    DD --> DE[Update Block Vote Counts]
+    DE --> DF[Calculate Network Consensus]
+    DF --> DG[Update Reputation Scores]
+    
+    %% Byzantine Detection
+    DG --> DH{Malicious Pattern Detected?}
+    DH -->|Yes| DI[Increment Byzantine Detection Counter]
+    DH -->|No| DJ[Continue Normal Operation]
+    DI --> DJ
+    
+    %% Statistics & Monitoring
+    DJ --> DK[Update Mining Statistics]
+    DK --> DL[Update BFT Metrics]
+    DL --> DM[Display Block Statistics]
+    DM --> DN[Schedule Next Block Event]
+    DN --> I
+    
+    %% Blockchain Validation
+    CY --> EA[Blockchain Integrity Check]
+    EA --> EB[Validate Block Sequence]
+    EB --> EC[Validate Previous Block References]
+    EC --> ED[Validate Chain Continuity]
+    ED --> EE{Chain Valid?}
+    EE -->|Yes| EF[Maintain Current Chain]
+    EE -->|No| EG[Request Chain Synchronization]
+    EF --> DJ
+    EG --> DJ
+    
+    %% Final Statistics Display
+    BZ --> FZ[Simulation End]
+    AC --> FZ
+    DJ --> FZ[After Simulation Time]
+    FZ --> FA[Display Final Statistics]
+    FA --> FB[Show Blockchain Length]
+    FB --> FC[Show Mining Performance]
+    FC --> FD[Show BFT Effectiveness]
+    FD --> FE[Show Byzantine Detection Rate]
+    FE --> FF[Show Hash Rate Statistics]
+    FF --> FG[Display Network Consensus Metrics]
+    
+    %% Styling
+    classDef honest fill:#90EE90
+    classDef byzantine fill:#FFB6C1
+    classDef encryption fill:#87CEEB
+    classDef mining fill:#DDA0DD
+    classDef fuzzy fill:#F0E68C
+    classDef blockchain fill:#98FB98
+    
+    class K,L,M,N,O,P,Q,R,S,T honest
+    class BI,BJ,BK,BL,BM,BN,BP byzantine
+    class M,N,O,P,Q,R,S,T encryption
+    class U,V,W,X,Y,Z,AA,AB,AC,AD,AE,AF mining
+    class CC,CD,CE,CF,CG,CH,CI,CJ,CK,CL,CM,CN,CO,CP,CQ,CR,CS,CT fuzzy
+    class CY,EA,EB,EC,ED,EE,EF,EG blockchain
+```
 
 ### 1. **Network Initialization Phase**
 ```mermaid
