@@ -10,6 +10,7 @@
 #include <set>
 
 using namespace omnetpp;
+using namespace std;
 
 class Computer : public cSimpleModule {
 private:
@@ -21,10 +22,10 @@ private:
 
     // Fuzzy BFT components
     FuzzyBFT fuzzySystem;
-    std::map<int, double> nodeReputations;
-    std::map<std::string, int> blockVotes;
-    std::map<std::string, int> blockValidations;
-    std::map<std::string, std::set<int>> blockVoters;
+    map<int, double> nodeReputations;
+    map<string, int> blockVotes;
+    map<string, int> blockValidations;
+    map<string, set<int>> blockVoters;
     int totalNodes;
     double trustThreshold;
 
