@@ -8,7 +8,7 @@ FuzzyBFT::FuzzyBFT() {
     initializeFuzzyRules();
 }
 
-// **STEP 1: Determining a set of fuzzy rules**
+// STEP 1: Determining a set of fuzzy rules
 void FuzzyBFT::initializeFuzzyRules() {
     rules.clear();
 
